@@ -1,0 +1,100 @@
+/** Tokyo Night Light Theme for Element Plus */
+:root {
+    color-scheme: light;
+
+    /* Primary Light Gray - #9aa5ce (Tokyo Night Key Gray) */
+    --el-color-primary: #9aa5ce;
+    --el-color-primary-light-3: #b8c0dd;
+    --el-color-primary-light-5: #ccd2e6;
+    --el-color-primary-light-7: #e1e4f0;
+    --el-color-primary-light-8: #ebeef5;
+    --el-color-primary-light-9: #f5f6fa;
+    --el-color-primary-dark-2: #7b84a5;
+
+    /* Success Green - #587539 */
+    --el-color-success: #587539;
+    --el-color-success-light-3: #8a9e74;
+    --el-color-success-light-5: #abb99c;
+    --el-color-success-light-7: #ced6c3;
+    --el-color-success-light-8: #dfe4d7;
+    --el-color-success-light-9: #eff1eb;
+    --el-color-success-dark-2: #465d2d;
+
+    /* Warning Orange - #b15c00 */
+    --el-color-warning: #b15c00;
+    --el-color-warning-light-3: #c88d4c;
+    --el-color-warning-light-5: #d8ae7f;
+    --el-color-warning-light-7: #e7cfb2;
+    --el-color-warning-light-8: #efdfe6;
+    /* Slight hue shift or graying */
+    --el-color-warning-light-9: #f7efe6;
+    --el-color-warning-dark-2: #8d4900;
+
+    /* Danger Red - #f52a65 */
+    --el-color-danger: #f52a65;
+    --el-color-danger-light-3: #f86a93;
+    --el-color-danger-light-5: #fa94b2;
+    --el-color-danger-light-7: #fcbfd1;
+    --el-color-danger-light-8: #fdd4e0;
+    --el-color-danger-light-9: #feeaef;
+    --el-color-danger-dark-2: #c42151;
+
+    /* Error (Same as Danger) */
+    --el-color-error: #f52a65;
+    --el-color-error-light-3: #f86a93;
+    --el-color-error-light-5: #fa94b2;
+    --el-color-error-light-7: #fcbfd1;
+    --el-color-error-light-8: #fdd4e0;
+    --el-color-error-light-9: #feeaef;
+    --el-color-error-dark-2: #c42151;
+
+    /* Info Cyan - #007197 */
+    --el-color-info: #007197;
+    --el-color-info-light-3: #4c9bb6;
+    --el-color-info-light-5: #7fb8cb;
+    --el-color-info-light-7: #b2d4e0;
+    --el-color-info-light-8: #cce2ea;
+    --el-color-info-light-9: #e5f1f5;
+    --el-color-info-dark-2: #005a79;
+
+    /* Backgrounds - Clean Neutral (Image Style) */
+    /* Backgrounds - Clean Neutral (Image Style) */
+    --el-bg-color-page: #e6e8eb;
+    --el-bg-color: #f5f7fa;
+    --el-bg-color-overlay: #ffffff;
+
+    /* Text - Standard Dark High Contrast */
+    --el-text-color-primary: #1a1b26;
+    /* Dark almost black/blue */
+    --el-text-color-regular: #444b5a;
+    --el-text-color-secondary: #787c99;
+    --el-text-color-placeholder: #a1a6b7;
+    --el-text-color-disabled: #c0c4cc;
+
+    /* Border - Neutral */
+    --el-border-color-darker: #cdd1e0;
+    --el-border-color-dark: #d4dbe9;
+    --el-border-color: #dce1ea;
+    --el-border-color-light: #e4e7ed;
+    --el-border-color-lighter: #ebeef5;
+    --el-border-color-extra-light: #f2f6fc;
+
+    /* Fill - Neutral */
+    --el-fill-color-darker: #e6e8eb;
+    --el-fill-color-dark: #ebedf0;
+    --el-fill-color: #f0f2f5;
+    --el-fill-color-light: #f5f7fa;
+    --el-fill-color-lighter: #fafafa;
+    --el-fill-color-extra-light: #fafcff;
+    --el-fill-color-blank: #ffffff;
+
+    /* Shadows */
+    --el-box-shadow: 0px 12px 32px 4px rgba(0, 0, 0, 0.04), 0px 8px 20px rgba(0, 0, 0, 0.08);
+    --el-box-shadow-light: 0px 0px 12px rgba(0, 0, 0, 0.12);
+    --el-box-shadow-lighter: 0px 0px 6px rgba(0, 0, 0, 0.12);
+    --el-box-shadow-dark: 0px 16px 48px 16px rgba(0, 0, 0, 0.08), 0px 12px 32px rgba(0, 0, 0, 0.12), 0px 8px 16px -8px rgba(0, 0, 0, 0.05);
+
+    /* Mask */
+    --el-mask-color: rgba(255, 255, 255, 0.9);
+    --el-mask-color-extra-light: rgba(255, 255, 255, 0.3);
+}

@@ -15,6 +15,7 @@ import Agent from "@/components/Agent.vue";
 
 const win = getCurrentWindow();
 const isMax = ref(false);
+const windowHeight = ref(window.innerHeight);
 const isDark = useDark()
 // const isDark = useDark()
 const toggleDark = useToggle(isDark)
@@ -113,7 +114,12 @@ function handleClickOutside(event: MouseEvent) {
   }
 }
 
-const minimize = () => win.minimize();
+const minimize = () => {
+  if (document.activeElement instanceof HTMLElement) {
+    document.activeElement.blur();
+  }
+  win.minimize();
+};
 const close = () => win.close();
 
 win.onResized(() => {
@@ -124,13 +130,22 @@ const toggleMaximize = () => {
   isMax.value ? win.unmaximize() : win.maximize();
 };
 
+// 更新窗口高度
+const updateWindowHeight = () => {
+  windowHeight.value = window.innerHeight - 185;
+  console.log('windowHeight.value=',windowHeight.value);
+};
+
 // 添加全局点击监听
 onMounted(() => {
   document.addEventListener('click', handleClickOutside);
+  window.addEventListener('resize', updateWindowHeight);
+  updateWindowHeight(); // 初始化高度
 });
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside);
+  window.removeEventListener('resize', updateWindowHeight);
 });
 
 const profile_menus = reactive([
@@ -162,16 +177,38 @@ function handleProfileMenuItemClick(menuIndex: number, itemIndex: number) {
   closeAllMenus();
 }
 
-// 点击外部关闭菜单
-// function handleClickOutside(event: MouseEvent) {
-//   const target = event.target as HTMLElement;
-//   if (!target.closest('.menubar')) {
-//     closeAllMenus();
-//   }
-// }
 
+// 拖拽相关逻辑
+const agentWidth = ref(300); // 初始宽度
+const isResizing = ref(false);
 
+const startResize = () => {
+  isResizing.value = true;
+  document.addEventListener('mousemove', resize);
+  document.addEventListener('mouseup', stopResize);
+  document.body.style.cursor = 'ew-resize';
+  document.body.style.userSelect = 'none'; // 防止拖拽过程中选中文字
+};
 
+const resize = (e: MouseEvent) => {
+  if (!isResizing.value) return;
+  // 计算新宽度：窗口总宽度 - 鼠标当前X坐标
+  // 注意：这里假设 Agent 在最右侧
+  const newWidth = window.innerWidth - e.clientX;
+
+  // 设置最小和最大宽度限制
+  if (newWidth > 200 && newWidth < 800) {
+    agentWidth.value = newWidth;
+  }
+};
+
+const stopResize = () => {
+  isResizing.value = false;
+  document.removeEventListener('mousemove', resize);
+  document.removeEventListener('mouseup', stopResize);
+  document.body.style.cursor = 'default';
+  document.body.style.userSelect = '';
+};
 </script>
 
 <template>
@@ -208,7 +245,6 @@ function handleProfileMenuItemClick(menuIndex: number, itemIndex: number) {
             </div>
           </div>
         </div>
-
         <div class="titlebar-center">
           <!-- 中间拖拽占位 -->
           <div class="title">AI-Agent</div>
@@ -218,17 +254,15 @@ function handleProfileMenuItemClick(menuIndex: number, itemIndex: number) {
             <button class="win-toggle-btn size-default" @click="minimize">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
                 <path fill="currentColor"
-                  d="m174.72 855.68 135.296-45.12 23.68 11.84C388.096 849.536 448.576 864 512 864c211.84 0 384-166.784 384-352S723.84 160 512 160 128 326.784 128 512c0 69.12 24.96 139.264 70.848 199.232l22.08 28.8-46.272 115.584zm-45.248 82.56A32 32 0 0 1 89.6 896l58.368-145.92C94.72 680.32 64 596.864 64 512 64 299.904 256 96 512 96s448 203.904 448 416-192 416-448 416a461.06 461.06 0 0 1-206.912-48.384l-175.616 58.56z">
+                  d="M160 826.88 273.536 736H800a64 64 0 0 0 64-64V256a64 64 0 0 0-64-64H224a64 64 0 0 0-64 64zM296 800 147.968 918.4A32 32 0 0 1 96 893.44V256a128 128 0 0 1 128-128h576a128 128 0 0 1 128 128v416a128 128 0 0 1-128 128z">
                 </path>
                 <path fill="currentColor"
-                  d="M512 563.2a51.2 51.2 0 1 1 0-102.4 51.2 51.2 0 0 1 0 102.4m192 0a51.2 51.2 0 1 1 0-102.4 51.2 51.2 0 0 1 0 102.4m-384 0a51.2 51.2 0 1 1 0-102.4 51.2 51.2 0 0 1 0 102.4">
+                  d="M352 512h320q32 0 32 32t-32 32H352q-32 0-32-32t32-32m0-192h320q32 0 32 32t-32 32H352q-32 0-32-32t32-32">
                 </path>
               </svg>
             </button>
           </div>
-
           <el-divider direction="vertical" style="height: 12px;" />
-
           <div class="multi-toggle">
             <button class="win-toggle-btn size-default" @click="minimize">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
@@ -237,15 +271,8 @@ function handleProfileMenuItemClick(menuIndex: number, itemIndex: number) {
                 </path>
               </svg>
             </button>
-
-
-
-
-
-
             <div v-for="(menu, index) in profile_menus" :key="menu.name" class="profile-menu-item"
               :class="{ active: menu.open }" @click.stop="toggleProfileMenu(index)">
-
               <button class="win-toggle-btn size-arrow-down">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
                   <path fill="currentColor"
@@ -258,7 +285,6 @@ function handleProfileMenuItemClick(menuIndex: number, itemIndex: number) {
                   </path>
                 </svg>
               </button>
-
               <!-- 下拉菜单 -->
               <div v-if="menu.open" class="dropdown-profile-menu">
                 <div v-for="(item, itemIndex) in menu.items" :key="itemIndex" class="dropdown-item" :class="{
@@ -275,20 +301,7 @@ function handleProfileMenuItemClick(menuIndex: number, itemIndex: number) {
                 </div>
               </div>
             </div>
-            <!-- <button class="win-toggle-btn size-arrow-down" @click="minimize">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
-                <path fill="currentColor"
-                  d="M288 320a224 224 0 1 0 448 0 224 224 0 1 0-448 0m544 608H160a32 32 0 0 1-32-32v-96a160 160 0 0 1 160-160h448a160 160 0 0 1 160 160v96a32 32 0 0 1-32 32z">
-                </path>
-              </svg>
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
-                <path fill="currentColor"
-                  d="M831.872 340.864 512 652.672 192.128 340.864a30.59 30.59 0 0 0-42.752 0 29.12 29.12 0 0 0 0 41.6L489.664 714.24a32 32 0 0 0 44.672 0l340.288-331.712a29.12 29.12 0 0 0 0-41.728 30.59 30.59 0 0 0-42.752 0z">
-                </path>
-              </svg>
-            </button> -->
           </div>
-
           <!-- 右侧窗口按钮 -->
           <div class="window-controls">
             <!-- 最小化 -->
@@ -297,7 +310,6 @@ function handleProfileMenuItemClick(menuIndex: number, itemIndex: number) {
                 <path fill="currentColor" d="M128 544h768a32 32 0 1 0 0-64H128a32 32 0 0 0 0 64"></path>
               </svg>
             </button>
-
             <button class="win-btn normal" @click="toggleMaximize">
               <!-- 最大化 -->
               <svg v-if="!isMax" xmlns="http://www.w3.org/2000/svg" class="win-icon" viewBox="0 0 1024 1024">
@@ -374,14 +386,14 @@ function handleProfileMenuItemClick(menuIndex: number, itemIndex: number) {
 
             <!-- 底部按钮 -->
             <div class="bottom-buttons">
-              <button class="activity-btn" :class="{ active: activeView === 'settings' }"
+              <!-- <button class="activity-btn" :class="{ active: activeView === 'settings' }"
                 @click="activeView = 'settings'" title="Settings">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
                   <path fill="currentColor"
                     d="M600.704 64a32 32 0 0 1 30.464 22.208l35.2 109.376c14.784 7.232 28.928 15.36 42.432 24.512l112.384-24.192a32 32 0 0 1 34.432 15.36L944.32 364.8a32 32 0 0 1-4.032 37.504l-77.12 85.12a357 357 0 0 1 0 49.024l77.12 85.248a32 32 0 0 1 4.032 37.504l-88.704 153.6a32 32 0 0 1-34.432 15.296L708.8 803.904c-13.44 9.088-27.648 17.28-42.368 24.512l-35.264 109.376A32 32 0 0 1 600.704 960H423.296a32 32 0 0 1-30.464-22.208L357.696 828.48a352 352 0 0 1-42.56-24.64l-112.32 24.256a32 32 0 0 1-34.432-15.36L79.68 659.2a32 32 0 0 1 4.032-37.504l77.12-85.248a357 357 0 0 1 0-48.896l-77.12-85.248A32 32 0 0 1 79.68 364.8l88.704-153.6a32 32 0 0 1 34.432-15.296l112.32 24.256c13.568-9.152 27.776-17.408 42.56-24.64l35.2-109.312A32 32 0 0 1 423.232 64H600.64zm-23.424 64H446.72l-36.352 113.088-24.512 11.968a294 294 0 0 0-34.816 20.096l-22.656 15.36-116.224-25.088-65.28 113.152 79.68 88.192-1.92 27.136a293 293 0 0 0 0 40.192l1.92 27.136-79.808 88.192 65.344 113.152 116.224-25.024 22.656 15.296a294 294 0 0 0 34.816 20.096l24.512 11.968L446.72 896h130.688l36.48-113.152 24.448-11.904a288 288 0 0 0 34.752-20.096l22.592-15.296 116.288 25.024 65.28-113.152-79.744-88.192 1.92-27.136a293 293 0 0 0 0-40.256l-1.92-27.136 79.808-88.128-65.344-113.152-116.288 24.96-22.592-15.232a288 288 0 0 0-34.752-20.096l-24.448-11.904L577.344 128zM512 320a192 192 0 1 1 0 384 192 192 0 0 1 0-384m0 64a128 128 0 1 0 0 256 128 128 0 0 0 0-256">
                   </path>
                 </svg>
-              </button>
+              </button> -->
             </div>
           </el-aside>
           <el-main>
@@ -419,8 +431,9 @@ function handleProfileMenuItemClick(menuIndex: number, itemIndex: number) {
               </el-main>
             </el-container>
           </el-main>
-          <el-aside width="200px">
-            <Agent />
+          <el-aside :width="agentWidth + 'px'" class="agent-aside">
+            <div class="resize-handle" @mousedown="startResize"></div>
+            <Agent :height="windowHeight" />
           </el-aside>
         </el-container>
       </el-main>
@@ -429,7 +442,6 @@ function handleProfileMenuItemClick(menuIndex: number, itemIndex: number) {
           Footer
         </div>
       </el-footer>
-
     </el-container>
   </div>
 </template>
@@ -442,6 +454,8 @@ function handleProfileMenuItemClick(menuIndex: number, itemIndex: number) {
   display: flex;
   flex-direction: column;
   /*background-color: var(--bg-color, #f6f6f6);  可以配合主题 */
+  background-color: var(--el-bg-color-page);
+  color: var(--el-text-color-primary);
   overflow: hidden;
 }
 
@@ -450,9 +464,10 @@ function handleProfileMenuItemClick(menuIndex: number, itemIndex: number) {
   height: 32px;
   display: flex;
   align-items: center;
-  color: #ccc;
+  color: var(--el-text-color-regular);
   user-select: none;
-  border-bottom: 1px solid #333;
+  border-top: 1px solid #444B5A;
+  border-bottom: 1px solid var(--el-border-color-darker);
   position: relative;
   z-index: 1000;
   padding-left: 8px;
@@ -479,7 +494,7 @@ function handleProfileMenuItemClick(menuIndex: number, itemIndex: number) {
   justify-content: center;
   font-size: 12px;
   font-weight: 500;
-  color: #fff;
+  color: var(--el-text-color-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -546,12 +561,13 @@ function handleProfileMenuItemClick(menuIndex: number, itemIndex: number) {
 }
 
 .menu-item:hover {
-  background-color: rgba(255, 1, 33, 0.5);
+  background-color: var(--el-fill-color);
   transition: background-color 0.2s;
 }
 
 .menu-item.active {
-  background-color: rgba(122, 112, 33, 0.65);
+  background-color: var(--el-fill-color-dark);
+  color: var(--el-color-primary);
 }
 
 .menu-name {
@@ -567,8 +583,8 @@ function handleProfileMenuItemClick(menuIndex: number, itemIndex: number) {
   padding: 4px 4px;
   min-width: 180px;
   border-radius: 5px;
-  background-color: #2d2d2d;
-  border: 1px solid #555;
+  background-color: var(--el-bg-color-overlay);
+  border: 1px solid var(--el-border-color-dark);
   border-top: none;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   z-index: 1001;
@@ -599,8 +615,8 @@ function handleProfileMenuItemClick(menuIndex: number, itemIndex: number) {
   width: 180px;
   border-radius: 5px;
   /* min-width: 30px; */
-  background-color: #2d2d2d;
-  border: 1px solid #555;
+  background-color: var(--el-bg-color-overlay);
+  border: 1px solid var(--el-border-color-dark);
   border-top: none;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   z-index: 1001;
@@ -625,7 +641,7 @@ function handleProfileMenuItemClick(menuIndex: number, itemIndex: number) {
   justify-content: space-between;
   align-items: center;
   padding: 5px 30px;
-  color: #ddd;
+  color: var(--el-text-color-regular);
   font-size: 11px;
   cursor: default;
   transition: background-color 0.1s;
@@ -634,12 +650,12 @@ function handleProfileMenuItemClick(menuIndex: number, itemIndex: number) {
 }
 
 .dropdown-item:hover:not(.separator):not(.disabled) {
-  background-color: rgba(0, 120, 212, 0.9);
-  color: white;
+  background-color: var(--el-color-primary);
+  color: #ffffff;
 }
 
 .dropdown-item.disabled {
-  color: #666;
+  color: var(--el-text-color-disabled);
   cursor: not-allowed;
 }
 
@@ -650,7 +666,7 @@ function handleProfileMenuItemClick(menuIndex: number, itemIndex: number) {
 
 .separator-line {
   height: 1px;
-  background-color: #555;
+  background-color: var(--el-border-color);
   margin: 1px 0;
   width: 100%;
 }
@@ -660,13 +676,13 @@ function handleProfileMenuItemClick(menuIndex: number, itemIndex: number) {
 }
 
 .item-shortcut {
-  color: #999;
+  color: var(--el-text-color-secondary);
   font-size: 10px;
   margin-left: 20px;
 }
 
 .dropdown-item:hover:not(.separator):not(.disabled) .item-shortcut {
-  color: #ccc;
+  color: #eee;
 }
 
 /* 中间占位（用于拖拽） */
@@ -700,20 +716,20 @@ function handleProfileMenuItemClick(menuIndex: number, itemIndex: number) {
   height: 100%;
   border: none;
   background: transparent;
-  color: #ccc;
+  color: var(--el-text-color-regular);
   font-size: 12px;
   border-radius: 0 !important;
   transition: background-color 0.2s;
 }
 
 .window-controls .close:hover {
-  background: #e81123 !important;
+  background: var(--el-color-danger) !important;
   color: #fff;
 }
 
 .window-controls .normal:hover {
-  background: #c5b8b9 !important;
-  color: #fff;
+  background: var(--el-fill-color) !important;
+  color: var(--el-text-color-primary);
 }
 
 /* 按钮本体 */
@@ -725,7 +741,7 @@ function handleProfileMenuItemClick(menuIndex: number, itemIndex: number) {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #cccccc;
+  color: var(--el-text-color-regular);
   cursor: default;
   transition: background-color 0.15s;
 }
@@ -783,7 +799,7 @@ function handleProfileMenuItemClick(menuIndex: number, itemIndex: number) {
 
 /* 悬停效果 */
 .win-toggle-btn:hover {
-  background-color: rgba(172, 168, 168);
+  background-color: var(--el-fill-color);
   /* 浅灰色背景 */
 }
 
@@ -835,7 +851,7 @@ function handleProfileMenuItemClick(menuIndex: number, itemIndex: number) {
   border: none;
   border-radius: 3px;
   background: transparent;
-  color: #c5c5c5;
+  color: var(--el-text-color-secondary);
   font-size: 18px;
   cursor: default;
   transition: background-color 0.15s, color 0.15s;
@@ -846,12 +862,13 @@ function handleProfileMenuItemClick(menuIndex: number, itemIndex: number) {
 }
 
 .activity-btn:hover {
-  background: #1e1e1e;
+  background: var(--el-fill-color-light);
+  color: var(--el-text-color-primary);
 }
 
 .activity-btn.active {
-  background: #373737;
-  color: #ffffff;
+  background: var(--el-fill-color-dark);
+  color: var(--el-color-primary);
   /* border-left: 2px solid #007acc; */
 }
 
@@ -870,12 +887,46 @@ function handleProfileMenuItemClick(menuIndex: number, itemIndex: number) {
 
 .footer-content {
   /* background-color: darkcyan; */
-  border-top: 1px solid gray;
+  border-top: 1px solid var(--el-border-color-dark);
   width: 100%;
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* Agent 侧边栏样式 */
+.agent-aside {
+  position: relative;
+  border-left: 1px solid var(--el-border-color-darker);
+  /* 默认边框 */
+  overflow: hidden;
+  /* 隐藏溢出内容，确保子元素可以正确滚动 */
+  /* background-color: red; */
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* 拖拽手柄 */
+.resize-handle {
+  position: absolute;
+  left: -2px;
+  /* 向左微调，使其覆盖边框区域，便于点击 */
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  /* 热区宽度 */
+  cursor: ew-resize;
+  z-index: 100;
+  transition: background-color 0.2s;
+}
+
+/* 悬停或拖拽时高亮手柄 */
+.resize-handle:hover,
+body[style*="ew-resize"] .resize-handle {
+  background-color: var(--el-color-primary);
+  /* 蓝色高亮 */
 }
 </style>
 <style>
