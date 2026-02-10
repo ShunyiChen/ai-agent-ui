@@ -31,8 +31,7 @@ const menus = reactive([
     name: "File",
     open: false,
     items: [
-      { name: "New Project", shortcut: "Ctrl+N", action: () => console.log("New Project") },
-      { name: "Open Project", shortcut: "Ctrl+O", action: () => console.log("Open Project") },
+      { name: "Open Folder...", shortcut: "Ctrl+O", action: () => console.log("Open Folder") },
       { type: "separator" },
       { name: "Save", shortcut: "Ctrl+S", action: () => console.log("Save") },
       { name: "Save As...", shortcut: "Ctrl+Shift+S", action: () => console.log("Save As") },
@@ -140,8 +139,8 @@ const treeHeight = ref(0);
 
 // 更新窗口高度
 const updateWindowHeight = () => {
-  windowHeight.value = window.innerHeight - 185;
-  treeHeight.value = window.innerHeight - 68;
+  windowHeight.value = window.innerHeight - 183;
+  treeHeight.value = window.innerHeight - 88;
   console.log('windowHeight.value=', windowHeight.value);
 };
 
@@ -298,7 +297,7 @@ const data = createData(2, 2, 3)
 <template>
 
   <div class="common-layout">
-    <el-container>
+    <el-container style="height: 100%">
       <el-header class="titlebar drag-region">
         <div class="titlebar-left">
           <div class="menubar">
@@ -1183,6 +1182,7 @@ body[style*="ew-resize"] .explorer-resize-handle {
 .main-content-area {
   background-color: var(--el-bg-color-page);
   padding: 20px !important;
+  overflow: hidden;
 }
 
 .view-container {
