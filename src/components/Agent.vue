@@ -152,7 +152,6 @@ onMounted(() => {
     /* background-color: #1e1e1e; */
     /* VS Code Sidebar Color */
     color: var(--el-text-color-regular);
-    font-family: 'Segoe UI', sans-serif;
     /* border-left: 1px solid #333; */
     overflow: hidden;
     height: 100%;
@@ -195,7 +194,6 @@ onMounted(() => {
     gap: 16px;
     scroll-behavior: smooth;
     min-height: 0;
-    max-height: 200px;
 }
 
 /* Scrollbar Styling */
@@ -266,19 +264,20 @@ onMounted(() => {
     word-wrap: break-word;
     white-space: pre-wrap;
     position: relative;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--el-border-color);
+    /* box-shadow: 0 0px 4px rgba(0, 0, 0, 0.5); */
 }
 
 .ai-bubble {
     /* background-color: #2b2b2b; */
-    background-color: var(--el-fill-color-darker);
+    background-color: var(--el-fill-color-light);
     color: var(--el-text-color-primary);
     border-top-left-radius: 2px;
 }
 
 .user-bubble {
-    background-color: var(--el-color-primary);
-    color: #ffffff;
+    background-color: var(--el-fill-color-dark);
+    color: var(--el-text-color-primary);
     border-top-right-radius: 2px;
 }
 

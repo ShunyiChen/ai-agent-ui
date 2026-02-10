@@ -4,6 +4,12 @@ import { ref, reactive, onMounted, onUnmounted } from "vue";
 // import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import Agent from "@/components/Agent.vue";
+import {
+  Menu as IconMenu,
+  Location,
+  Setting,
+} from '@element-plus/icons-vue'
+import { Document, Folder, FolderOpened } from '@element-plus/icons-vue'
 // import {
 //   Check,
 //   Delete,
@@ -70,7 +76,7 @@ const menus = reactive([
     name: "View",
     open: false,
     items: [
-      { name: "View Help", action: () => console.log("View Help") },
+      { name: "View Help", action: () => isCollapse.value = !isCollapse.value },
       { name: "Documentation", action: () => console.log("Documentation") },
       { type: "separator" },
       { name: "About", action: () => console.log("About") }
@@ -78,9 +84,9 @@ const menus = reactive([
   }
 ]);
 
-type ViewType = "explorer" | "search" | "git" | "extensions" | "settings";
+type ViewType = "database" | "k8s" | "add" | "settings";
 
-const activeView = ref<ViewType>("explorer");
+const activeView = ref<ViewType>("database");
 
 // 关闭所有菜单
 function closeAllMenus() {
@@ -130,10 +136,13 @@ const toggleMaximize = () => {
   isMax.value ? win.unmaximize() : win.maximize();
 };
 
+const treeHeight = ref(0);
+
 // 更新窗口高度
 const updateWindowHeight = () => {
   windowHeight.value = window.innerHeight - 185;
-  console.log('windowHeight.value=',windowHeight.value);
+  treeHeight.value = window.innerHeight - 68;
+  console.log('windowHeight.value=', windowHeight.value);
 };
 
 // 添加全局点击监听
@@ -209,6 +218,81 @@ const stopResize = () => {
   document.body.style.cursor = 'default';
   document.body.style.userSelect = '';
 };
+
+// Explorer 拖拽相关逻辑
+const explorerWidth = ref(250); // 初始宽度
+const isExplorerResizing = ref(false);
+
+const startExplorerResize = () => {
+  isExplorerResizing.value = true;
+  document.addEventListener('mousemove', explorerResize);
+  document.addEventListener('mouseup', stopExplorerResize);
+  document.body.style.cursor = 'ew-resize';
+  document.body.style.userSelect = 'none';
+};
+
+const explorerResize = (e: MouseEvent) => {
+  if (!isExplorerResizing.value) return;
+  // 计算新宽度：鼠标当前X坐标 - ActivityBar宽度(约44px)
+  const activityBarWidth = 44;
+  const newWidth = e.clientX - activityBarWidth;
+
+  if (newWidth > 150 && newWidth < 600) {
+    explorerWidth.value = newWidth;
+  }
+};
+
+const stopExplorerResize = () => {
+  isExplorerResizing.value = false;
+  document.removeEventListener('mousemove', explorerResize);
+  document.removeEventListener('mouseup', stopExplorerResize);
+  document.body.style.cursor = 'default';
+  document.body.style.userSelect = '';
+};
+
+const isCollapse = ref(false)
+
+interface Tree {
+  id: string
+  label: string
+  children?: Tree[]
+}
+
+const getKey = (prefix: string, id: number) => {
+  return `${prefix}-${id}`
+}
+
+const createData = (
+  maxDeep: number,
+  maxChildren: number,
+  minNodesNumber: number,
+  deep = 1,
+  key = 'node'
+): Tree[] => {
+  let id = 0
+  return Array.from({ length: minNodesNumber })
+    .fill(deep)
+    .map(() => {
+      const childrenNumber =
+        deep === maxDeep ? 0 : Math.round(Math.random() * maxChildren)
+      const nodeKey = getKey(key, ++id)
+      return {
+        id: nodeKey,
+        label: nodeKey,
+        children: childrenNumber
+          ? createData(maxDeep, maxChildren, childrenNumber, deep + 1, nodeKey)
+          : undefined,
+      }
+    })
+}
+
+const props = {
+  value: 'id',
+  label: 'label',
+  children: 'children',
+}
+const data = createData(2, 2, 3)
+
 </script>
 
 <template>
@@ -347,38 +431,38 @@ const stopResize = () => {
           <el-aside class="activity-bar">
             <!-- 顶部按钮组 -->
             <div class="top-buttons">
-              <button class="activity-btn" :class="{ active: activeView === 'explorer' }"
-                @click="activeView = 'explorer'" title="Explorer">
+              <button class="activity-btn" :class="{ active: activeView === 'database' }"
+                @click="activeView = 'database'" title="Database">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
                   <path fill="currentColor"
-                    d="M128 896V128h768v768zm291.712-327.296 128 102.4 180.16-201.792-47.744-42.624-139.84 156.608-128-102.4-180.16 201.792 47.744 42.624zM816 352a48 48 0 1 0-96 0 48 48 0 0 0 96 0">
+                    d="m161.92 580.736 29.888 58.88C171.328 659.776 160 681.728 160 704c0 82.304 155.328 160 352 160s352-77.696 352-160c0-22.272-11.392-44.16-31.808-64.32l30.464-58.432C903.936 615.808 928 657.664 928 704c0 129.728-188.544 224-416 224S96 833.728 96 704c0-46.592 24.32-88.576 65.92-123.264">
+                  </path>
+                  <path fill="currentColor"
+                    d="m161.92 388.736 29.888 58.88C171.328 467.84 160 489.792 160 512c0 82.304 155.328 160 352 160s352-77.696 352-160c0-22.272-11.392-44.16-31.808-64.32l30.464-58.432C903.936 423.808 928 465.664 928 512c0 129.728-188.544 224-416 224S96 641.728 96 512c0-46.592 24.32-88.576 65.92-123.264">
+                  </path>
+                  <path fill="currentColor"
+                    d="M512 544c-227.456 0-416-94.272-416-224S284.544 96 512 96s416 94.272 416 224-188.544 224-416 224m0-64c196.672 0 352-77.696 352-160S708.672 160 512 160s-352 77.696-352 160 155.328 160 352 160">
                   </path>
                 </svg>
               </button>
 
-              <button class="activity-btn" :class="{ active: activeView === 'search' }" @click="activeView = 'search'"
-                title="Search">
+              <button class="activity-btn" :class="{ active: activeView === 'k8s' }" @click="activeView = 'k8s'"
+                title="Kubernetes">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
                   <path fill="currentColor"
-                    d="m795.904 750.72 124.992 124.928a32 32 0 0 1-45.248 45.248L750.656 795.904a416 416 0 1 1 45.248-45.248zM480 832a352 352 0 1 0 0-704 352 352 0 0 0 0 704">
+                    d="M320 256a64 64 0 0 0-64 64v384a64 64 0 0 0 64 64h384a64 64 0 0 0 64-64V320a64 64 0 0 0-64-64zm0-64h384a128 128 0 0 1 128 128v384a128 128 0 0 1-128 128H320a128 128 0 0 1-128-128V320a128 128 0 0 1 128-128">
+                  </path>
+                  <path fill="currentColor"
+                    d="M512 64a32 32 0 0 1 32 32v128h-64V96a32 32 0 0 1 32-32m160 0a32 32 0 0 1 32 32v128h-64V96a32 32 0 0 1 32-32m-320 0a32 32 0 0 1 32 32v128h-64V96a32 32 0 0 1 32-32m160 896a32 32 0 0 1-32-32V800h64v128a32 32 0 0 1-32 32m160 0a32 32 0 0 1-32-32V800h64v128a32 32 0 0 1-32 32m-320 0a32 32 0 0 1-32-32V800h64v128a32 32 0 0 1-32 32M64 512a32 32 0 0 1 32-32h128v64H96a32 32 0 0 1-32-32m0-160a32 32 0 0 1 32-32h128v64H96a32 32 0 0 1-32-32m0 320a32 32 0 0 1 32-32h128v64H96a32 32 0 0 1-32-32m896-160a32 32 0 0 1-32 32H800v-64h128a32 32 0 0 1 32 32m0-160a32 32 0 0 1-32 32H800v-64h128a32 32 0 0 1 32 32m0 320a32 32 0 0 1-32 32H800v-64h128a32 32 0 0 1 32 32">
                   </path>
                 </svg>
               </button>
 
-              <button class="activity-btn" :class="{ active: activeView === 'git' }" @click="activeView = 'git'"
-                title="Source Control">
+              <button class="activity-btn" :class="{ active: activeView === 'add' }" @click="activeView = 'add'"
+                title="Add Server">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
                   <path fill="currentColor"
-                    d="m679.872 348.8-301.76 188.608a127.8 127.8 0 0 1 5.12 52.16l279.936 104.96a128 128 0 1 1-22.464 59.904l-279.872-104.96a128 128 0 1 1-16.64-166.272l301.696-188.608a128 128 0 1 1 33.92 54.272z">
-                  </path>
-                </svg>
-              </button>
-
-              <button class="activity-btn" :class="{ active: activeView === 'extensions' }"
-                @click="activeView = 'extensions'" title="Extensions">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
-                  <path fill="currentColor"
-                    d="M160 448a32 32 0 0 1-32-32V160.064a32 32 0 0 1 32-32h256a32 32 0 0 1 32 32V416a32 32 0 0 1-32 32zm448 0a32 32 0 0 1-32-32V160.064a32 32 0 0 1 32-32h255.936a32 32 0 0 1 32 32V416a32 32 0 0 1-32 32zM160 896a32 32 0 0 1-32-32V608a32 32 0 0 1 32-32h256a32 32 0 0 1 32 32v256a32 32 0 0 1-32 32zm448 0a32 32 0 0 1-32-32V608a32 32 0 0 1 32-32h255.936a32 32 0 0 1 32 32v256a32 32 0 0 1-32 32z">
+                    d="M512 64a448 448 0 1 1 0 896 448 448 0 0 1 0-896m-38.4 409.6H326.4a38.4 38.4 0 1 0 0 76.8h147.2v147.2a38.4 38.4 0 0 0 76.8 0V550.4h147.2a38.4 38.4 0 0 0 0-76.8H550.4V326.4a38.4 38.4 0 1 0-76.8 0z">
                   </path>
                 </svg>
               </button>
@@ -386,47 +470,77 @@ const stopResize = () => {
 
             <!-- 底部按钮 -->
             <div class="bottom-buttons">
-              <!-- <button class="activity-btn" :class="{ active: activeView === 'settings' }"
+              <button class="activity-btn" :class="{ active: activeView === 'settings' }"
                 @click="activeView = 'settings'" title="Settings">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
                   <path fill="currentColor"
                     d="M600.704 64a32 32 0 0 1 30.464 22.208l35.2 109.376c14.784 7.232 28.928 15.36 42.432 24.512l112.384-24.192a32 32 0 0 1 34.432 15.36L944.32 364.8a32 32 0 0 1-4.032 37.504l-77.12 85.12a357 357 0 0 1 0 49.024l77.12 85.248a32 32 0 0 1 4.032 37.504l-88.704 153.6a32 32 0 0 1-34.432 15.296L708.8 803.904c-13.44 9.088-27.648 17.28-42.368 24.512l-35.264 109.376A32 32 0 0 1 600.704 960H423.296a32 32 0 0 1-30.464-22.208L357.696 828.48a352 352 0 0 1-42.56-24.64l-112.32 24.256a32 32 0 0 1-34.432-15.36L79.68 659.2a32 32 0 0 1 4.032-37.504l77.12-85.248a357 357 0 0 1 0-48.896l-77.12-85.248A32 32 0 0 1 79.68 364.8l88.704-153.6a32 32 0 0 1 34.432-15.296l112.32 24.256c13.568-9.152 27.776-17.408 42.56-24.64l35.2-109.312A32 32 0 0 1 423.232 64H600.64zm-23.424 64H446.72l-36.352 113.088-24.512 11.968a294 294 0 0 0-34.816 20.096l-22.656 15.36-116.224-25.088-65.28 113.152 79.68 88.192-1.92 27.136a293 293 0 0 0 0 40.192l1.92 27.136-79.808 88.192 65.344 113.152 116.224-25.024 22.656 15.296a294 294 0 0 0 34.816 20.096l24.512 11.968L446.72 896h130.688l36.48-113.152 24.448-11.904a288 288 0 0 0 34.752-20.096l22.592-15.296 116.288 25.024 65.28-113.152-79.744-88.192 1.92-27.136a293 293 0 0 0 0-40.256l-1.92-27.136 79.808-88.128-65.344-113.152-116.288 24.96-22.592-15.232a288 288 0 0 0-34.752-20.096l-24.448-11.904L577.344 128zM512 320a192 192 0 1 1 0 384 192 192 0 0 1 0-384m0 64a128 128 0 1 0 0 256 128 128 0 0 0 0-256">
                   </path>
                 </svg>
-              </button> -->
+              </button>
             </div>
           </el-aside>
           <el-main>
             <el-container>
-              <el-aside width="200px">Explorer</el-aside>
-              <el-main>
-                <div v-if="activeView === 'explorer'">
-                  <h2>Explorer</h2>
-                  <p>这里是文件资源管理器</p>
-                  <el-button @click="toggleDark()">Main
+              <!-- Explorer 侧边栏 - 根据 activeView 显示不同内容 -->
+              <el-aside class="explorer-sidebar" :width="explorerWidth + 'px'">
+                <div class="explorer-resize-handle" @mousedown="startExplorerResize"></div>
+                <div class="explorer-header">
+                  <span class="explorer-title">Explorer</span>
+                </div>
+
+                <!-- Database AIOps 内容 -->
+                <div v-if="activeView === 'database'" class="explorer-content">
+                  <el-tree-v2 style="max-width: 600px" :data="data" :props="props" :height="treeHeight">
+                    <template #default="{ node }">
+                      <el-icon class="node-icon" :class="{ 'is-leaf': node.isLeaf }">
+                        <Document v-if="node.isLeaf" />
+                        <Folder v-else-if="!node.expanded" />
+                        <FolderOpened v-else />
+                      </el-icon>
+                      <span>{{ node.label }}</span>
+                    </template>
+                  </el-tree-v2>
+                </div>
+
+                <!-- Kubernetes AIOps 内容 -->
+                <div v-else-if="activeView === 'k8s'" class="explorer-content">
+
+                </div>
+
+                <!-- Add Server 内容 -->
+                <div v-else-if="activeView === 'add'" class="explorer-content">
+                </div>
+
+                <!-- Settings 内容 -->
+                <div v-else-if="activeView === 'settings'" class="explorer-content">
+
+                </div>
+              </el-aside>
+
+              <el-main class="main-content-area">
+                <div v-if="activeView === 'database'" class="view-container">
+                  <h2>Database AIOps Dashboard</h2>
+                  <p>智能数据库运维管理中心</p>
+                  <el-button @click="toggleDark()">
                     <i inline-block align-middle i="dark:carbon-moon carbon-sun" />
                     <span class="ml-2">{{ isDark ? 'Dark' : 'Light' }}</span>
                   </el-button>
                 </div>
 
-                <div v-else-if="activeView === 'search'">
-                  <h2>Search</h2>
-                  <p>这里是搜索视图</p>
+                <div v-else-if="activeView === 'k8s'" class="view-container">
+                  <h2>Kubernetes AIOps Dashboard</h2>
+                  <p>智能容器编排运维管理中心</p>
                 </div>
 
-                <div v-else-if="activeView === 'git'">
-                  <h2>Source Control</h2>
-                  <p>这里是 Git 面板</p>
+                <div v-else-if="activeView === 'add'" class="view-container">
+                  <h2>Add New Server</h2>
+                  <p>添加新的数据源或 Kubernetes 集群</p>
                 </div>
 
-                <div v-else-if="activeView === 'extensions'">
-                  <h2>Extensions</h2>
-                  <p>这里是插件市场</p>
-                </div>
-
-                <div v-else-if="activeView === 'settings'">
-                  <h2>settings</h2>
-                  <p>settingsddd</p>
+                <div v-else-if="activeView === 'settings'" class="view-container">
+                  <h2>Settings</h2>
+                  <p>应用程序设置</p>
                 </div>
               </el-main>
             </el-container>
@@ -466,7 +580,7 @@ const stopResize = () => {
   align-items: center;
   color: var(--el-text-color-regular);
   user-select: none;
-  border-top: 1px solid #444B5A;
+  border-top: 1px solid var(--el-border-color-darker);
   border-bottom: 1px solid var(--el-border-color-darker);
   position: relative;
   z-index: 1000;
@@ -557,7 +671,6 @@ const stopResize = () => {
   font-size: 13px;
   /* 稍微调小字体 */
   transition: background-color 0.2s;
-  font-family: "ui-sans-serif", "-apple-system", "system-ui", "Segoe UI", "Helvetica", "Apple Color Emoji", "Arial", "sans-serif", "Segoe UI Emoji", "Segoe UI Symbol";
 }
 
 .menu-item:hover {
@@ -603,7 +716,6 @@ const stopResize = () => {
   font-size: 13px;
   /* 稍微调小字体 */
   transition: background-color 0.2s;
-  font-family: "ui-sans-serif", "-apple-system", "system-ui", "Segoe UI", "Helvetica", "Apple Color Emoji", "Arial", "sans-serif", "Segoe UI Emoji", "Segoe UI Symbol";
 }
 
 /* 个人资料下拉菜单 */
@@ -693,7 +805,6 @@ const stopResize = () => {
   font-size: 12px;
   /* 稍微调小字体 */
   transition: background-color 0.2s;
-  font-family: "ui-sans-serif", "-apple-system", "system-ui", "Segoe UI", "Helvetica", "Apple Color Emoji", "Arial", "sans-serif", "Segoe UI Emoji", "Segoe UI Symbol";
 }
 
 /* 所有可点元素禁止拖拽 */
@@ -928,8 +1039,180 @@ body[style*="ew-resize"] .resize-handle {
   background-color: var(--el-color-primary);
   /* 蓝色高亮 */
 }
+
+/* ===== Explorer 侧边栏样式 ===== */
+.explorer-sidebar {
+  position: relative;
+  border-right: 1px solid var(--el-border-color-darker);
+  height: 100%;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.explorer-header {
+  height: 35px;
+  min-height: 35px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  /* text-transform: uppercase; */
+  /* color: var(--el-text-color-secondary); */
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+.explorer-title {
+  font-size: 11px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.explorer-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  cursor: ew-resize;
+  z-index: 100;
+  transition: background-color 0.2s;
+}
+
+.explorer-resize-handle:hover,
+body[style*="ew-resize"] .explorer-resize-handle {
+  background-color: var(--el-color-primary);
+}
+
+.explorer-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0px 0;
+}
+
+.explorer-content :deep(.el-tree) {
+  background-color: transparent;
+}
+
+
+.badge {
+  margin-left: auto;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background-color: var(--el-color-primary-light-8);
+  color: var(--el-color-primary);
+  font-weight: 600;
+}
+
+.section-items {
+  padding-left: 12px;
+}
+
+.explorer-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  font-size: 12px;
+  color: var(--el-text-color-regular);
+  cursor: pointer;
+  transition: background-color 0.15s;
+  border-radius: 4px;
+  margin: 2px 4px;
+}
+
+.explorer-item:hover {
+  background-color: var(--el-fill-color);
+}
+
+.explorer-item.highlight {
+  color: var(--el-color-primary);
+  font-weight: 500;
+}
+
+/* 状态图标 */
+.item-icon {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.item-icon.online,
+.item-icon.running {
+  background-color: #67c23a;
+  box-shadow: 0 0 6px rgba(103, 194, 58, 0.5);
+}
+
+.item-icon.offline {
+  background-color: #909399;
+}
+
+.item-icon.pending {
+  background-color: #e6a23c;
+  animation: pulse 1.5s infinite;
+}
+
+.item-icon.error {
+  background-color: #f56c6c;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.item-text {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 主内容区域 */
+.main-content-area {
+  background-color: var(--el-bg-color-page);
+  padding: 20px !important;
+}
+
+.view-container {
+  height: 100%;
+}
+
+.view-container h2 {
+  margin: 0 0 12px 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+}
+
+.view-container p {
+  margin: 0 0 16px 0;
+  color: var(--el-text-color-secondary);
+  font-size: 14px;
+}
+
+
+.node-icon {
+  margin-right: 5px;
+  color: var(--el-color-warning);
+}
 </style>
 <style>
+:root {
+  --el-font-family: "ui-sans-serif", "-apple-system", "system-ui", "Segoe UI", "Helvetica", "Apple Color Emoji", "Arial", "sans-serif", "Segoe UI Emoji", "Segoe UI Symbol";
+}
+
 html,
 body,
 #app {
@@ -938,5 +1221,6 @@ body,
   margin: 0;
   padding: 0;
   overflow: hidden;
+  font-family: "ui-sans-serif", "-apple-system", "system-ui", "Segoe UI", "Helvetica", "Apple Color Emoji", "Arial", "sans-serif", "Segoe UI Emoji", "Segoe UI Symbol";
 }
 </style>
