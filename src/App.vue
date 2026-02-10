@@ -3,6 +3,8 @@ import { useDark, useToggle } from '@vueuse/core'
 import { ref, reactive, onMounted, onUnmounted } from "vue";
 // import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { open } from '@tauri-apps/plugin-dialog';
+import { readDir } from '@tauri-apps/plugin-fs';
 import Agent from "@/components/Agent.vue";
 import {
   Menu as IconMenu,
@@ -26,12 +28,81 @@ const isDark = useDark()
 // const isDark = useDark()
 const toggleDark = useToggle(isDark)
 // 菜单项数据
+
+
+type ViewType = "database" | "k8s" | "add" | "settings";
+
+const activeView = ref<ViewType>("database");
+
+// 关闭所有菜单
+
+// 递归读取目录
+const loadDirectory = async (path: string): Promise<Tree[]> => {
+  try {
+    const entries = await readDir(path);
+    const nodes: Tree[] = [];
+
+    // 简单的路径拼接，兼容 Windows
+    const separator = path.includes('\\') ? '\\' : '/';
+
+    for (const entry of entries) {
+      // if (entry.name.startsWith('.')) continue; // 跳过隐藏文件
+
+      const fullPath = path.endsWith(separator) ? `${path}${entry.name}` : `${path}${separator}${entry.name}`;
+
+      const node: Tree = {
+        id: fullPath,
+        label: entry.name,
+      };
+
+      if (entry.isDirectory) {
+        node.children = await loadDirectory(fullPath);
+      }
+      nodes.push(node);
+    }
+
+    // 排序：文件夹在前，文件在后
+    nodes.sort((a, b) => {
+      const aIsDir = a.children !== undefined;
+      const bIsDir = b.children !== undefined;
+      if (aIsDir && !bIsDir) return -1;
+      if (!aIsDir && bIsDir) return 1;
+      return a.label.localeCompare(b.label);
+    });
+
+    return nodes;
+  } catch (error) {
+    console.error('Error reading directory:', error);
+    return [];
+  }
+};
+
+const handleOpenFolder = async () => {
+  try {
+    const selected = await open({
+      directory: true,
+      multiple: false,
+    });
+
+    if (selected && typeof selected === 'string') {
+      console.log('Opening folder:', selected);
+      // 切换视图到 database (Explorer)
+      activeView.value = 'database';
+      const treeData = await loadDirectory(selected);
+      data.value = treeData;
+    }
+  } catch (err) {
+    console.error('Failed to open folder:', err);
+  }
+};
+
+// 菜单项数据
 const menus = reactive([
   {
     name: "File",
     open: false,
     items: [
-      { name: "Open Folder...", shortcut: "Ctrl+O", action: () => console.log("Open Folder") },
+      { name: "Open Folder...", shortcut: "Ctrl+O", action: handleOpenFolder },
       { type: "separator" },
       { name: "Save", shortcut: "Ctrl+S", action: () => console.log("Save") },
       { name: "Save As...", shortcut: "Ctrl+Shift+S", action: () => console.log("Save As") },
@@ -83,11 +154,6 @@ const menus = reactive([
   }
 ]);
 
-type ViewType = "database" | "k8s" | "add" | "settings";
-
-const activeView = ref<ViewType>("database");
-
-// 关闭所有菜单
 function closeAllMenus() {
   menus.forEach(menu => menu.open = false);
 
@@ -257,40 +323,14 @@ interface Tree {
   children?: Tree[]
 }
 
-const getKey = (prefix: string, id: number) => {
-  return `${prefix}-${id}`
-}
 
-const createData = (
-  maxDeep: number,
-  maxChildren: number,
-  minNodesNumber: number,
-  deep = 1,
-  key = 'node'
-): Tree[] => {
-  let id = 0
-  return Array.from({ length: minNodesNumber })
-    .fill(deep)
-    .map(() => {
-      const childrenNumber =
-        deep === maxDeep ? 0 : Math.round(Math.random() * maxChildren)
-      const nodeKey = getKey(key, ++id)
-      return {
-        id: nodeKey,
-        label: nodeKey,
-        children: childrenNumber
-          ? createData(maxDeep, maxChildren, childrenNumber, deep + 1, nodeKey)
-          : undefined,
-      }
-    })
-}
 
 const props = {
   value: 'id',
   label: 'label',
   children: 'children',
 }
-const data = createData(2, 2, 3)
+const data = ref<Tree[]>([])
 
 </script>
 
